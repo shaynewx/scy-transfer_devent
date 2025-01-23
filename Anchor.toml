@@ -11,7 +11,7 @@ scy_transfer = "4VFWJuCZNG6t8tHSQe2s9hnwK56h8MqaB5FzZP9k1at1"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

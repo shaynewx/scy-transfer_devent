@@ -28,6 +28,7 @@ pub struct BuySplWithSol<'info> {
     // User's token account that receives SPL tokens
     #[account(mut)]
     pub user_spl_ata: Account<'info, TokenAccount>,
+    pub price_update: Account<'info, PriceUpdateV2>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -122,18 +123,28 @@ pub mod spl_transfer {
         ctx: Context<BuySplWithSol>,
         // The amount of sol paid by the user (in lamport)
         lamports_to_pay: u64,
-        // The SOL/USD provided by the oracle
-        sol_price_in_usd: f64
     ) -> Result<()> {
         // 1. Convert lamports to SOL, then multiply by SOL/USD to get the value in USD, and divide by 0.02 to get the amount of SPL tokens
         let spl_precision: u64 = 1_000_000; // 1 SPL tokens = 10^6 smallest unit
         let spl_price_in_usd = 0.02f64; // 1 SPL tokens = 0.02 USD
         let lamports_per_sol = 1_000_000_000u64; // 1 SOL = 10^9 lamports
 
+        let price_update = &mut ctx.accounts.price_update;
+        // get_price_no_older_than will fail if the price update is more than 60 seconds old     
+        let maximum_age: u64 = 60;
+         // This string is the id of the SOL/USD feed. See https://pyth.network/developers/price-feed-ids for all available IDs.       
+        let feed_id: [u8; 32] = get_feed_id_from_hex("0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d")?;
+        let price = price_update.get_price_no_older_than(&Clock::get()?, maximum_age, &feed_id)?;
+        // Sample output:
+        msg!("SOL/USD price is ({} ± {}) * 10^{}", price.price, price.conf, price.exponent);
+
+        // Safely convert price.price (i64) to u64
+        let sol_price_in_usd: f64 = price.price as f64;
+
         let sol_amount = (lamports_to_pay as f64) / (lamports_per_sol as f64); // the amount of sol
         let user_pay_in_usd = sol_amount * sol_price_in_usd; // the value in USD
 
-        let s_amount_float = (user_pay_in_usd / spl_price_in_usd) * (spl_precision as f64); // SPL tokens minimum unit amount
+        let spl_amount_float = (user_pay_in_usd / spl_price_in_usd) * (spl_precision as f64); // SPL tokens minimum unit amount
         let spl_amount: u64 = spl_amount_float.floor() as u64; // Convert to integer
 
         // 2. Verify whether the amount of SPL tokens in the library is sufficient

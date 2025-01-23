@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{ self, Token, TokenAccount, Transfer as SplTransfer };
+use anchor_spl::token::{ self, Token, TokenAccount, Mint, Transfer as SplTransfer };
+use anchor_spl::associated_token::AssociatedToken;
+use anchor_spl::associated_token;
 use anchor_lang::solana_program::system_instruction;
 use pyth_solana_receiver_sdk::price_update::{ PriceUpdateV2 };
 use pyth_solana_receiver_sdk::price_update::get_feed_id_from_hex;
@@ -10,27 +12,36 @@ declare_id!("4VFWJuCZNG6t8tHSQe2s9hnwK56h8MqaB5FzZP9k1at1");
 // 用户使用SOL购买SCY的账户信息 BuyScyWithSol
 #[derive(Accounts)]
 pub struct BuyScyWithSol<'info> {
-    // 用户的普通钱包（发送SOL的一方）
+    // 用户的普通钱包（发送SOL的一方，会通过该账户支付sol，因此要有签名全选）
     #[account(mut)]
     pub user: Signer<'info>,
 
-    // Scypher 普通钱包（接受SOL的一方）
+    /// CHECK: Scypher的 sol钱包（用户支付的 SOL 会进入该账户）
     #[account(mut)]
-    /// CHECK: This is a system account to receive SOL. No further validation required.
     pub project_sol_account: AccountInfo<'info>,
 
-    // Scypher的 SCY代币钱包
+    // Scypher 项目持有 SCY 代币的 SPL 账户，用户购买时会从这里扣减 SCY
     #[account(mut)]
     pub project_scy_ata: Account<'info, TokenAccount>,
 
-    // 用来对 SCY 做转账授权的主体
+    // 该账户具有对 project_scy_ata 账户的控制权限，负责批准 SCY 代币转账
     pub project_scy_authority: Signer<'info>,
 
-    // 用户接收 SCY 的关联账户（？《我们是否需要帮助用户提前创建SCY的关联代币账户呢？》）
-    #[account(mut)]
-    pub user_scy_ata: Account<'info, TokenAccount>,
+    pub mint: Account<'info, Mint>,    // SCY 代币的 Mint 账户，定义了 SCY 代币的相关属性（总供应量、精度等）
+    
+     // #[account(...)]: 是一个初始化条件，表示如果用户没有 SCY 代币账户，会自动创建
+    #[account(
+        init_if_needed,
+        payer = user,
+        associated_token::mint = mint,
+        associated_token::authority = user
+    )]
+    pub user_scy_ata: Account<'info, TokenAccount>,    // 用户接收 SCY 的关联账户
+    
+    #[account(address = associated_token::ID)]
+    pub associated_token_program:  Program<'info, associated_token::AssociatedToken>,
 
-    // 程序Programs
+    pub price_update: Account<'info, PriceUpdateV2>, // 价格更新账户
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
@@ -61,7 +72,6 @@ pub struct BuyScyWithSpl<'info> {
     #[account(mut)]
     pub user_scy_ata: Account<'info, TokenAccount>,
 
-    // 程序Programs
     pub token_program: Program<'info, Token>,
 }
 
@@ -84,13 +94,16 @@ pub mod scy_transfer {
         let price_update = &mut ctx.accounts.price_update;
         let maximum_age: u64 = 30;
 
-        // 三个Feed IDs
-        // Beta
+        // TODO:Determine which feed ids should be used for development and production environments respectively
+        // See https://pyth.network/developers/price-feed-ids for all available IDs.
+
+        // Feed IDs from Beta
         // let feed_ids = [
         //     ("SOL/USD", "0xfe650f0367d4a7ef9815a593ea15d36593f0643aaaf0149bb04be67ab851decd"),
         //     ("USDT/USD", "0x1fc18861232290221461220bd4e2acd1dcdfbc89c84092c93c18bdc7756c1588"),
         //     ("USDC/USD", "0x41f3625971ca2ed2263e78573fe5ce23e13d2558ed3f2e47ab0f84fb9e7ae722"),
         // ];
+
         // Solana Price Feed Accounts
         let feed_ids = [
             ("SOL/USD", "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE"),
@@ -121,15 +134,26 @@ pub mod scy_transfer {
     pub fn buy_scy_with_sol(
         ctx: Context<BuyScyWithSol>,
         // 用户支付的的sol数量（单位是lamport）
-        lamports_to_pay: u64,
-        // 预言机提供的 SOL兑USD 汇率
-        sol_price_in_usd: f64
+        lamports_to_pay: u64
     ) -> Result<()> {
         // 1. 使用预言机获得 SOL/USD，计算应向用户发放的 SCY 数量
-
         let scy_precision: u64 = 1_000_000; // 1 SCY = 10^6 最小单位
         let scy_price_in_usd = 0.02f64; // 1 SCY = 0.02 USD
         let lamports_per_sol = 1_000_000_000u64; // 1 SOL = 10^9 lamports
+
+        let price_update = &mut ctx.accounts.price_update; // 使用预言机获取价格
+
+        let maximum_age: u64 = 60; // 60s内更新的价格
+        // This string is the id of the SOL/USD feed. See https://pyth.network/developers/price-feed-ids for all available IDs.
+        let feed_id: [u8; 32] = get_feed_id_from_hex(
+            "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d"
+        )?;
+        let price = price_update.get_price_no_older_than(&Clock::get()?, maximum_age, &feed_id)?;
+        // Sample output:
+        msg!("SOL/USD price is ({} ± {}) * 10^{}", price.price, price.conf, price.exponent);
+
+        // Safely convert price.price as f64
+        let sol_price_in_usd: f64 = price.price as f64;
 
         let sol_amount = (lamports_to_pay as f64) / (lamports_per_sol as f64); // the amount of sol
         let user_pay_in_usd = sol_amount * sol_price_in_usd; // the value in USD
@@ -137,7 +161,8 @@ pub mod scy_transfer {
         let scy_amount_float = (user_pay_in_usd / scy_price_in_usd) * (scy_precision as f64); // SCY 最小单位数量
         let scy_amount: u64 = scy_amount_float.floor() as u64; // 转成整型
 
-        // 2.TODO: 转账前先检查 我们的SCY余额是否足够, 如果不够，则停止交易并在前端提示用户
+        // 2.TODO: 验证 SCY数量是否足够
+        // TODO: 不够的话在前端告知用户
         require!(
             ctx.accounts.project_scy_ata.amount >= scy_amount,
             CustomError::InsufficientSCYBalance
@@ -154,7 +179,8 @@ pub mod scy_transfer {
             project_sol_account.key,
             lamports_to_pay
         );
-        // 调用转账，将指令发送到区块链网络上执行（？《这里要确认是用invoke还是invoke_signed》）
+        // 调用转账，将指令发送到区块链网络上执行（
+        // TODO: Confirm whether to use invoke or invoke_signed
         anchor_lang::solana_program::program::invoke(
             &transfer_instruction,
             &[

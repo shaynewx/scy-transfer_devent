@@ -9,6 +9,7 @@
     "@pythnetwork/client": "^2.22.0",
     "@pythnetwork/price-service-client": "^1.9.0",
     "@pythnetwork/pyth-solana-receiver": "^0.9.1",
+    "@solana/spl-token": "^0.4.9",
     "bs58": "^6.0.0",
     "rpc-websockets": "7.11.2"
   },
