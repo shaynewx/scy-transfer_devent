@@ -34,12 +34,15 @@ describe("scy-transfer", () => {
 
   //  SCY 代币 Mint 地址 ：BvDJvtyXUbHSQaRJ5ZrFdDveC3LhYQFVMpABMZL9LBAQ
   //  SCY 代币账户 (用于存放SCY) : Epdg688JVN4qXpS5BZ8zKYkcs6BpYfRMxNdr4jsHXoj6
-  let projectScyAccount = new PublicKey("Epdg688JVN4qXpS5BZ8zKYkcs6BpYfRMxNdr4jsHXoj6"); // 项目存放 SCY 代币的钱包
+  let projectScyAccount = new PublicKey(
+    "Epdg688JVN4qXpS5BZ8zKYkcs6BpYfRMxNdr4jsHXoj6"
+  ); // 项目存放 SCY 代币的钱包
   console.log("Project SCY Account:", projectScyAccount.toBase58());
 
-
   // SOL/USD 的价格预言机账户（由预言机提供商（例如 Pyth Network）管理的公共账户）
-  const solUsdPriceFeedAccount = new PublicKey("7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE");
+  const solUsdPriceFeedAccount = new PublicKey(
+    "7UVimffxr9ow1uXYxsr4LHAcV58mLzhmwaeKvJ1pjLiE"
+  );
 
   const lamportsToPay = 500_000; // 0.0005 SOL in lamports  支付的sol金额
   const connection = provider.connection; // 到 Solana RPC 节点的连接
@@ -60,10 +63,9 @@ describe("scy-transfer", () => {
       provider.wallet.publicKey
     );
     console.log("项目 SCY 代币账户:", projectScyAta.toBase58());
-    const projectScyAtaPubkey = new PublicKey(projectScyAta );
-    let projectScyAtaInfo = await getAccount(connection,projectScyAtaPubkey);
-    console.log('项目 SCY 代币账户 Info: ', projectScyAtaInfo );
-
+    const projectScyAtaPubkey = new PublicKey(projectScyAta);
+    let projectScyAtaInfo = await getAccount(connection, projectScyAtaPubkey);
+    // console.log('项目 SCY 代币账户 Info: ', projectScyAtaInfo );
 
     // 获取用户 SCY代币的关联账户地址
     userScyAccount = await getAssociatedTokenAddress(
@@ -74,7 +76,6 @@ describe("scy-transfer", () => {
     // const userScyAccountPubkey = new PublicKey(userScyAccount);
     // let userScyAccountInfo = await getAccount(connection, userScyAccountPubkey);
     // console.log("用户 SCY ATA 信息: ", userScyAccountInfo);
-
 
     // 检查用户的 SCY 代币账户是否存在，如果不存在则创建
     const accountInfo = await connection.getAccountInfo(userScyAccount);
@@ -107,13 +108,14 @@ describe("scy-transfer", () => {
         }
       }
     } else {
-      console.log("User SCY account :",userScyAccount.toBase58());
-      console.log("User SCY account info:",accountInfo);
+      console.log("User SCY account :", userScyAccount.toBase58());
+      // console.log("User SCY account info:",accountInfo);
     }
   });
 
   // 购买 SCY 代币测试
   it("Buys SCY tokens with SOL", async () => {
+    console.log(" 开始尝试交易... ");
     const tx = await program.methods
       .buyScyWithSol(new anchor.BN(lamportsToPay))
       .accounts({
@@ -170,7 +172,7 @@ describe("scy-transfer", () => {
       );
       assert.strictEqual(
         anchorError.error.errorMessage,
-        "Not enough SCY tokens in project wallet.",
+        "Not enough SCY in project wallet.",
         "Expected error message about insufficient SCY tokens"
       );
 

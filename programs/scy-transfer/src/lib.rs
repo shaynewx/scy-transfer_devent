@@ -6,7 +6,7 @@ use anchor_lang::solana_program::system_instruction;
 use pyth_solana_receiver_sdk::price_update::{ PriceUpdateV2 };
 use pyth_solana_receiver_sdk::price_update::get_feed_id_from_hex;
 
-declare_id!("4VFWJuCZNG6t8tHSQe2s9hnwK56h8MqaB5FzZP9k1at1");
+declare_id!("EEZzT84UQRMgsomJt9zkt7RaekCuX3MjRuCaZg3uVqLy");
 
 //----------------------------------------------------结构声明----------------------------------------------------
 // 用户使用SOL购买SCY的账户信息 BuyScyWithSol
@@ -137,6 +137,7 @@ pub mod scy_transfer {
         lamports_to_pay: u64
     ) -> Result<()> {
         // 1. 使用预言机获得 SOL/USD，计算应向用户发放的 SCY 数量
+        // TODO: 计算的SCY个数有误，需要调整
         let scy_precision: u64 = 1_000_000; // 1 SCY = 10^6 最小单位
         let scy_price_in_usd = 0.02f64; // 1 SCY = 0.02 USD
         let lamports_per_sol = 1_000_000_000u64; // 1 SOL = 10^9 lamports
@@ -179,8 +180,8 @@ pub mod scy_transfer {
             project_sol_account.key,
             lamports_to_pay
         );
+
         // 调用转账，将指令发送到区块链网络上执行（
-        // TODO: Confirm whether to use invoke or invoke_signed
         anchor_lang::solana_program::program::invoke(
             &transfer_instruction,
             &[
@@ -191,8 +192,6 @@ pub mod scy_transfer {
         )?;
 
         // 4. TODO: Verify the payment success and amount
-
-        // 5. TODO: Check whether the user has an SPL token account for SCY, and if not, help the user create one
 
         // 6. 将 SCY 转给用户，（此时已经确认 project_scy_ata 账户中有足够SCY）
         let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), SplTransfer {
@@ -238,8 +237,6 @@ pub mod scy_transfer {
         token::transfer(cpi_ctx, token_amount)?;
 
         // 4. TODO: Verify the payment success and amount
-
-        // 5. TODO: Check whether the user has an SPL token account for SCY, and if not, help the user create one
 
         // 6. 给用户发放 SCY
         let cpi_ctx_scy_transfer = CpiContext::new(
