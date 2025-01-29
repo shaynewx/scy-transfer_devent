@@ -8,6 +8,9 @@ use pyth_solana_receiver_sdk::price_update::get_feed_id_from_hex;
 
 declare_id!("EEZzT84UQRMgsomJt9zkt7RaekCuX3MjRuCaZg3uVqLy");
 
+const MIN_PURCHASE: u64 = 50;
+const MAX_PURCHASE: u64 = 5_000_000;
+
 //----------------------------------------------------结构声明----------------------------------------------------
 // 用户使用SOL购买SCY的账户信息 BuyScyWithSol
 #[derive(Accounts)]
@@ -27,19 +30,18 @@ pub struct BuyScyWithSol<'info> {
     // 该账户具有对 project_scy_ata 账户的控制权限，负责批准 SCY 代币转账
     pub project_scy_authority: Signer<'info>,
 
-    pub mint: Account<'info, Mint>,    // SCY 代币的 Mint 账户，定义了 SCY 代币的相关属性（总供应量、精度等）
-    
-     // #[account(...)]: 是一个初始化条件，表示如果用户没有 SCY 代币账户，会自动创建
+    pub mint: Account<'info, Mint>, // SCY 代币的 Mint 账户，定义了 SCY 代币的相关属性（总供应量、精度等）
+    // #[account(...)]: 是一个初始化条件，表示如果用户没有 SCY 代币账户，会自动创建
     #[account(
         init_if_needed,
         payer = user,
         associated_token::mint = mint,
         associated_token::authority = user
     )]
-    pub user_scy_ata: Account<'info, TokenAccount>,    // 用户接收 SCY 的关联账户
-    
+    pub user_scy_ata: Account<'info, TokenAccount>, // 用户接收 SCY 的关联账户
+
     #[account(address = associated_token::ID)]
-    pub associated_token_program:  Program<'info, associated_token::AssociatedToken>,
+    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
 
     pub price_update: Account<'info, PriceUpdateV2>, // 价格更新账户
     pub token_program: Program<'info, Token>,
@@ -68,11 +70,26 @@ pub struct BuyScyWithSpl<'info> {
     // 用来对 SCY 做转账授权的主体
     pub project_scy_authority: Signer<'info>,
 
-    // 用户接收 SCY 的关联账户
-    #[account(mut)]
+    pub user_mint: Account<'info, Mint>,
+
+    pub mint: Account<'info, Mint>,
+
+    // User's token account that receives SPL tokens
+    #[account(
+        init_if_needed,
+        payer = user,
+        associated_token::mint = mint,
+        associated_token::authority = user
+    )]
     pub user_scy_ata: Account<'info, TokenAccount>,
 
+    #[account(address = associated_token::ID)]
+    pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
+
+    pub price_update: Account<'info, PriceUpdateV2>,
+
     pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
 }
 
 // 获取价格
@@ -136,9 +153,9 @@ pub mod scy_transfer {
         // 用户支付的的sol数量（单位是lamport）
         lamports_to_pay: u64
     ) -> Result<()> {
-        // 1. 使用预言机获得 SOL/USD，计算应向用户发放的 SCY 数量
         // TODO: 计算的SCY个数有误，需要调整
-        let scy_precision: u64 = 1_000_000; // 1 SCY = 10^6 最小单位
+        // 1. 使用预言机获得 SOL/USD，计算应向用户发放的 SCY 数量
+        let scy_precision: u64 = 1_000_000_000; // 1 SCY = 10^9 最小单位
         let scy_price_in_usd = 0.02f64; // 1 SCY = 0.02 USD
         let lamports_per_sol = 1_000_000_000u64; // 1 SOL = 10^9 lamports
 
@@ -154,20 +171,35 @@ pub mod scy_transfer {
         msg!("SOL/USD price is ({} ± {}) * 10^{}", price.price, price.conf, price.exponent);
 
         // Safely convert price.price as f64
-        let sol_price_in_usd: f64 = price.price as f64;
+        let sol_price_in_usd: f64 = (price.price as f64) * (10f64).powi(price.exponent);
+        msg!("SOL/USD 价格 after convert is {}", sol_price_in_usd);
 
         let sol_amount = (lamports_to_pay as f64) / (lamports_per_sol as f64); // the amount of sol
+        msg!("Users pay sol amount: is {}", sol_amount);
+
         let user_pay_in_usd = sol_amount * sol_price_in_usd; // the value in USD
+        msg!("Users pay_in_usd is {} usd ", user_pay_in_usd);
 
         let scy_amount_float = (user_pay_in_usd / scy_price_in_usd) * (scy_precision as f64); // SCY 最小单位数量
+        msg!("scy个数 {}  ", scy_amount_float);
+
         let scy_amount: u64 = scy_amount_float.floor() as u64; // 转成整型
 
-        // 2.TODO: 验证 SCY数量是否足够
-        // TODO: 不够的话在前端告知用户
-        require!(
-            ctx.accounts.project_scy_ata.amount >= scy_amount,
-            CustomError::InsufficientSCYBalance
-        );
+        msg!("User receive scy amount {}", scy_amount);
+
+        // 2.验证用户购买的SCY数量是否符合要求
+        if scy_amount < MIN_PURCHASE * scy_precision {
+            return Err(CustomError::PurchaseAmountTooLow.into());
+        }
+
+        if scy_amount > MAX_PURCHASE * scy_precision {
+            return Err(CustomError::PurchaseAmountTooHigh.into());
+        }
+
+        // 验证 项目账户 SCY数量是否足够
+        if ctx.accounts.project_scy_ata.amount < scy_amount {
+            return Err(CustomError::InsufficientSCYBalance.into());
+        }
 
         // 3. 接收用户的 SOL
         let user_signer = &ctx.accounts.user; // 用户的发送sol普通钱包
@@ -216,17 +248,60 @@ pub mod scy_transfer {
         token_amount: u64 // 用户要支付多少个 USDT/USDC， 但需要使用预言机获取真正的汇率
     ) -> Result<()> {
         // 1. 计算用户应得的 SCY ( 当前假设 1 USDT/USDC = 1 USD, 1 SCY = 0.02 USD)
-        let scy_precision: u64 = 1_000_000; // 1 SCY = 10^6 最小单位
-        let scy_price_in_usd = 0.02_f64;
 
-        let scy_amount_float = ((token_amount as f64) / scy_price_in_usd) * (scy_precision as f64); // SCY 最小单位数量
+        // TODO: 弄清楚精度问题
+        let scy_precision: u64 = 1_000_000_000; // 1 SCY = 10^9 最小单位
+        let scy_price_in_usd = 0.02_f64;
+        let decimals = 1_000_000u64; // 假设 USDT/USDC 的精度为 6
+
+        let user_mint_key = ctx.accounts.user_mint.key().to_string(); // 这里的user_mint
+
+        let feed_ids = match user_mint_key.as_str() {
+            // 为什么这里的 feedid 使用的 stable 中的
+            "USDT" => Some("0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"),
+            "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" =>
+                Some("0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a"),
+            // TODO: 为什么这里除了usdt另一个是unknown token
+            "7Yz3ecFyeU6heqrNSbikenhDDUX5DkE2eehJR6K1gjBb" =>
+                Some("0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a"),
+            _ => None,
+        };
+
+        let price_update = &mut ctx.accounts.price_update;
+        let maximum_age: u64 = 60;
+        let feed_id: [u8; 32] = match feed_ids {
+            Some(id) => get_feed_id_from_hex(id)?,
+            None => {
+                msg!("Invalid mint key: {}", user_mint_key);
+                return Err(CustomError::InvalidMint.into());
+            }
+        };
+
+        let price = price_update.get_price_no_older_than(&Clock::get()?, maximum_age, &feed_id)?;
+
+        let usdc_price_in_usd: f64 = (price.price as f64) * (10f64).powi(price.exponent);
+
+        let scy_amount_float =
+            ((token_amount as f64) / (decimals as f64) / scy_price_in_usd) * (scy_precision as f64); // SCY 最小单位数量
+
         let scy_amount: u64 = scy_amount_float.floor() as u64; // 转成整型
 
-        // 2.TODO: 转账前先检查 我们的SCY余额是否足够, 如果不够，则停止交易并在前端提示用户
-        require!(
-            ctx.accounts.project_scy_ata.amount >= scy_amount,
-            CustomError::InsufficientSCYBalance
-        );
+        msg!("(USDC or USDT)/USD price is {}", usdc_price_in_usd);
+
+        msg!("(project_scy_ata.amount数量为 {}", ctx.accounts.project_scy_ata.amount);
+        msg!("(购买的scy数量为 {}", scy_amount);
+        // 2.验证用户购买的SCY数量是否符合要求， 以及SCY数量是否足够
+        if scy_amount < MIN_PURCHASE * scy_precision {
+            return Err(CustomError::PurchaseAmountTooLow.into());
+        }
+
+        if scy_amount > MAX_PURCHASE * scy_precision {
+            return Err(CustomError::PurchaseAmountTooHigh.into());
+        }
+
+        if ctx.accounts.project_scy_ata.amount < scy_amount {
+            return Err(CustomError::InsufficientSCYBalance.into());
+        }
 
         // 3. 接收用户的 USDT/USDC
         let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), SplTransfer {
@@ -256,9 +331,14 @@ pub mod scy_transfer {
 /// 自定义错误示例
 #[error_code]
 pub enum CustomError {
-    #[msg("Not enough SCY in project wallet.")]
+    #[msg("Not enough SCY tokens in project wallet.")]
     InsufficientSCYBalance,
-    // 其他错误...
+    #[msg("The purchase amount is below the minimum limit.")]
+    PurchaseAmountTooLow,
+    #[msg("The purchase amount exceeds the maximum limit.")]
+    PurchaseAmountTooHigh,
+    #[msg("Invalid USDC/USDT mint address.")]
+    InvalidMint,
 }
 
 // TODO:
