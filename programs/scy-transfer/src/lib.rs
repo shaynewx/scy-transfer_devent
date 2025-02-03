@@ -8,16 +8,16 @@ use pyth_solana_receiver_sdk::price_update::get_feed_id_from_hex;
 use std::str::FromStr;
 
 
-declare_id!("EEZzT84UQRMgsomJt9zkt7RaekCuX3MjRuCaZg3uVqLy");
+declare_id!("5eXXdcqfCWeDZ4Eec6i5rLdSdMn1Wd5uDcraXoLMFbUK");
 
 const MIN_PURCHASE: u64 = 50;
 const MAX_PURCHASE: u64 = 5_000_000;
 
-// 主网地址
-pub const PROJECT_WALLET: &str = "AfTBgY18F7hXxyQyYLQCDV5goc5xTh6fNkxPDkRNvySR"; // 项目主钱包地址
-pub const PROJECT_SCY_ATA: &str = "8jh8wS49wF9LKScHMYzfrYquGVE6BGjXwmcjPsB8q37A"; // 用于存放SCY代币的 ATA地址
-pub const SCY_MINT_ADDRESS: &str = "7J75CSqZNv9XAtgxVsahbzyzCqgA5orLcsMgpnKDPSCY"; // SCY代币的 Mint地址
-pub const PROJECT_USDC_ATA: &str = "FMRjA3mjrmuYCLtoC3vHPykAWVX1et87XEU9Msh35UkX"; // USDC ATA地址
+// 测试网地址
+pub const PROJECT_WALLET: &str = "DgrjDPxTMo1mgCSgvhQNn1XJthGeJEiFfP1AReAP3z74"; // 项目主钱包地址
+pub const PROJECT_SCY_ATA: &str = "Epdg688JVN4qXpS5BZ8zKYkcs6BpYfRMxNdr4jsHXoj6"; // 用于存放SCY代币的 ATA地址
+pub const SCY_MINT_ADDRESS: &str = "BvDJvtyXUbHSQaRJ5ZrFdDveC3LhYQFVMpABMZL9LBAQ"; // SCY代币的 Mint地址
+pub const PROJECT_USDC_ATA: &str = "FvJWj1ZVWhmuvdJ6JYZaFEi7QkmZCRg5Sd5gzCp2eELR"; // USDC ATA地址
 
 //----------------------------------------------------结构声明----------------------------------------------------
 // 用户使用SOL购买SCY的账户信息 BuyScyWithSol
@@ -207,7 +207,7 @@ pub mod scy_transfer {
         ctx: Context<BuyScyWithSpl>,
         token_amount: u64 // 用户要支付多少个 USDT/USDC， 但需要使用预言机获取真正的汇率
     ) -> Result<()> {
-        // 1. 计算用户应得的 SCY ( 当前假设 1 USDT/USDC = 1 USD, 1 SCY = 0.02 USD)
+        // 1. 计算用户应得的 SCY 
 
         // 动态计算 SCY 代币的精度
         let scy_precision = 10_u64.pow(ctx.accounts.mint.decimals as u32);
@@ -222,12 +222,13 @@ pub mod scy_transfer {
             // 使用 stable 中的 USDT、USDC feed_id 
             // 左侧填写 USDT 和 USDC 的 Mint 地址， 右侧填写 Price Feed ID
             // USDT
-            "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" => Some("0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"),
+            // "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB" => Some("0x2b89b9dc8fdf9f34709a5b106b472f0f39bb6ca9ce04b0fd7f2e971688e2e53b"),
             // USDC
-            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" => Some("0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a"),
-            _ => None,
+            // "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" => Some("0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a"),
             // 以下是 devnet 上 usdc的 mint地址
-            // "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" => Some("0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a"),
+            "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" => Some("0xeaa020c61cc479712813461ce153894a96a6c00b21ed0cfc2798d1f9a9e9c94a"),
+            _ => None,
+
         };
 
         let price_update = &mut ctx.accounts.price_update;

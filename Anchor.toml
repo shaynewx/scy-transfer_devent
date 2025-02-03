@@ -5,14 +5,14 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-scy_transfer = "EEZzT84UQRMgsomJt9zkt7RaekCuX3MjRuCaZg3uVqLy"
+scy_transfer = "5eXXdcqfCWeDZ4Eec6i5rLdSdMn1Wd5uDcraXoLMFbUK"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Mainnet"
-wallet = "~/.config/solana/scypher-wallet.json"
+cluster = "Devnet"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
