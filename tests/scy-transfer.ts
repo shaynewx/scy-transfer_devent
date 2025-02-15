@@ -259,7 +259,7 @@ describe("scy-transfer", () => {
 
 
 
-  // 测试 6：更新admin信息
+  // 测试 6.1：更新admin信息
   // it("Updates the admin address", async () => {
   //   // 最早的管理员账户project_scy_authority：DgrjDPxTMo1mgCSgvhQNn1XJthGeJEiFfP1AReAP3z74
   //   // 更新后的管理员账户 wallet : 5SUbxyeRinG1v8z9ELemtCr6mwpMHaP6gBqBcXCZEkWP
@@ -278,22 +278,34 @@ describe("scy-transfer", () => {
   //   console.log("UpdatedState: ", updatedState)
   // });
 
-  it("Reverts the admin address back to project_scy_authority", async () => {
-    const newAdmin = project_scy_authority; // 目标是改回 project_scy_authority
-    console.log("Wallet type:", wallet.constructor.name);
+    // 测试 6.2：将admin改为原来的管理员
+  // it("Reverts the admin address back to project_scy_authority", async () => {
+  //   const newAdmin = project_scy_authority; // 目标是改回 project_scy_authority
 
-    const tx = await program.methods
-      .updateAdmin(newAdmin.publicKey) // 传入新的管理员地址
-      .accounts({})
-      .signers([wallet]) // 旧管理员 wallet 需要签名
-      .rpc();
+  //   const statePDA = new PublicKey("9a787i44wEb7dkU7CAdYnpPFaXCrHjNBh7G9aZsVECq5");
+  //   const stateAccounts = await program.account.state.all();
+  //   const currentAdmin =  stateAccounts[0].account.admin.toBase58();
 
-    console.log("Revert Admin TX:", tx);
+  //   if (currentAdmin !== wallet.publicKey.toBase58()) {
+  //     console.log("Wallet is NOT the current admin, cannot update admin")
+  // }
 
-    // 再次获取 state 以验证管理员变更
-    const revertedState = await program.account.state.all();
-    console.log("RevertedState: ", revertedState);
-});
+  //   const tx = await program.methods
+  //     .updateAdmin(newAdmin.publicKey) // 传入新的管理员地址
+  //     .accounts({
+  //       currentAdmin: wallet.publicKey, // !! 与第一次更新不同显式指定当前管理员
+  //     })
+  //     .signers([wallet]) // 旧管理员 wallet 需要签名
+  //     .rpc();
+
+  //   console.log("Revert Admin TX:", tx);
+
+  //   // 再次获取 state 以验证管理员变更
+  //   const revertedState = await program.account.state.all();
+  //   console.log("RevertedState: ", revertedState);
+
+  //   // TX: CtqdGKS5kvwD5jUmbAPEJw2WPmJvCyzaYdxJP1YKE6omzy5EGJbhqya7FRsNBXB6KV7nEPeEvxNimFG8epTFaGB
+  // });
 
   
   
