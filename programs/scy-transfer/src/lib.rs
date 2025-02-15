@@ -70,7 +70,7 @@ pub struct BuySplWithSpl<'info> {
 
     pub user_mint: Account<'info, Mint>, // USDC/USDT Mint地址
 
-    #[account(mut, address = state.mint)] //?? 这里是否应该是 usdc_mint 或 usdt_mint
+    #[account(mut, address = state.mint)] //? 这里是否应该是 usdc_mint 或 usdt_mint
     pub mint: Account<'info, Mint>, // SCY 代币的 Mint 账户 (该 Mint 地址必须与 state.mint 匹配)
 
     #[account(
@@ -120,6 +120,19 @@ pub struct InitializeState<'info> {
 }
 
 // ?是否需要InitializePdaSol
+#[derive(Accounts)]
+pub struct InitializePdaSol<'info> {
+    #[account(
+        init,
+        payer = admin,
+        seeds = [b"pda_sol"],
+        bump
+    )]
+    pub pda_sol_account: SystemAccount<'info>, // 这个 PDA 账户存储 SOL
+    #[account(mut)]
+    pub admin: Signer<'info>, // 管理员账户，必须签名
+    pub system_program: Program<'info, System>,
+}
 
 
 #[derive(Accounts)] // 定义 InitializePdaSplAta 所需的账户，用于初始化 pda_spl_ata 账户，也即合约的 SCY 代币账户（PDA），用于存储和分发 SCY 代币
@@ -260,8 +273,12 @@ pub mod scy_transfer {
     }
 
     // ?是否需要Initialize_pda_sol
+    // 初始化 pda_sol_account（用于存储 SOL 的 PDA 账户）
+    pub fn initialize_pda_sol(ctx: Context<InitializePdaSol>) -> Result<()> {
+        msg!("PDA SOL Account initialized: {}", ctx.accounts.pda_sol_account.key());
+        Ok(())
+    }
 
-    
     // 初始化 pda_spl_ata （用于储存、管理 SCY 的PDA账户） 结构体中会自动init
     pub fn initialize_pda_spl_ata(ctx: Context<InitializePdaSplAta>) -> Result<()> {
         msg!("PDA SPL ATA initialized: {}", ctx.accounts.pda_spl_ata.key());
