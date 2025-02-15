@@ -278,7 +278,7 @@ describe("scy-transfer", () => {
   //   console.log("UpdatedState: ", updatedState)
   // });
 
-    // 测试 6.2：将admin改为原来的管理员
+  // 测试 6.2：将admin改为原来的管理员
   // it("Reverts the admin address back to project_scy_authority", async () => {
   //   const newAdmin = project_scy_authority; // 目标是改回 project_scy_authority
 
@@ -307,15 +307,39 @@ describe("scy-transfer", () => {
   //   // TX: CtqdGKS5kvwD5jUmbAPEJw2WPmJvCyzaYdxJP1YKE6omzy5EGJbhqya7FRsNBXB6KV7nEPeEvxNimFG8epTFaGB
   // });
 
+    // 测试 7：使用 SOL 购买 SCY 代币测试
+  it("Buys SCY tokens with valid SOL", async () => {
+    const tx = await program.methods
+      .buySplWithSol(new anchor.BN(lamportsToPay))
+      .accounts({
+        user: wallet.publicKey,
+        mint: scyMint,
+        priceUpdate: solUsdPriceFeedAccount
+      })
+      .signers([wallet])
+      .rpc();
+
+    console.log("Transaction signature:", tx);
+
+    // Fetch the user's SCY token account balance
+    const userScyAccountInfo = await connection.getParsedAccountInfo(
+      userScyAccount
+    );
+    const balance = userScyAccountInfo.value?.data["parsed"]["info"]["tokenAmount"]["uiAmount"];
+    console.log("User SCY Token Balance:", balance);
+
+    //TX: 3zSgeBMxw6iVGdd7ZtjuBHXxjZdkfteFNhyuduwCtxoCuTqLJx9QqzNRvpXyx9u4PzaDPrBUyYkG1AopMpw38cno
+  });
+
   
   
 
 
   
 
-  // 购买 SCY 代币测试
-  it("Buys scy tokens with valid SOL", async () => {
-    console.log(" 开始尝试交易... ");
+
+  // it("Buys scy tokens with valid SOL", async () => {
+  //   console.log(" 开始尝试交易... ");
   //   console.log(`wallet.publicKey: ${ wallet.publicKey}`);
   //   console.log(`project_scy_authority.publicKey: ${project_scy_authority.publicKey}`);
   //   console.log(`projectScyAccount: ${projectScyAccount}`);
@@ -347,7 +371,7 @@ describe("scy-transfer", () => {
   //       "uiAmount"
   //     ];
   //   console.log("User SCY Token Balance:", balance);
-  });
+  // });
 
   // 用户使用usdc购买scy
   // it("buy scy token with valid usdc", async () => {
