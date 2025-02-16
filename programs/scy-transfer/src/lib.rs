@@ -124,8 +124,21 @@ pub struct InitializeState<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// ?是否需要InitializePdaSol
 
+#[derive(Accounts)]
+pub struct InitializePdaSol<'info> { // 用于储存 SOL 的PDA账户
+    #[account(mut)]
+    pub admin: Signer<'info>,
+
+   // ? 以下代码是修改 SOL 的PDA账户，因此这个初始化就是在向这个 SOL 的PDA账户中存入最低金额，因此有可能初始化失败
+    #[account(
+        mut,
+        seeds = [b"pda_sol"], 
+        bump,
+    )]
+    pub pda_sol_account: SystemAccount<'info>, // 这是一个 SystemAccount PDA
+    pub system_program: Program<'info, System>,
+}
 
 #[derive(Accounts)] // 定义 InitializePdaSplAta 所需的账户，用于初始化 pda_spl_ata 账户，也即合约的 SCY 代币账户（PDA），用于存储和分发 SCY 代币
 pub struct InitializePdaSplAta<'info> {
@@ -264,7 +277,32 @@ pub mod scy_transfer {
         Ok(())
     }
 
-    // ?是否需要Initialize_pda_sol
+    // 初始化 pda_sol （用于储存、管理 SOL 的PDA账户） 结构体中会自动init
+    pub fn initialize_pda_sol(ctx: Context<InitializePdaSol>) -> Result<()> {
+        let rent = Rent::get()?; // 获取当前租金
+        let rent_exempt_lamports = rent.minimum_balance(0); // 计算 0 字节账户的租金豁免金额
+        let admin_signer = &ctx.accounts.admin;
+        let system_program = &ctx.accounts.system_program;
+        
+        // 构造 SOL 转账指令
+        let transfer_instruction = system_instruction::transfer(
+            ctx.accounts.admin.key,
+            &ctx.accounts.pda_sol_account.key,
+            rent_exempt_lamports
+        );
+
+        anchor_lang::solana_program::program::invoke(
+            &transfer_instruction,
+            &[
+                admin_signer.to_account_info(),
+                ctx.accounts.pda_sol_account.to_account_info(),
+                system_program.to_account_info(),
+            ]
+        )?;
+
+        msg!("PDA SOL account initialized: {}", ctx.accounts.pda_sol_account.key());
+        Ok(())
+    }
 
 
     // 初始化 pda_spl_ata （用于储存、管理 SCY 的PDA账户） 结构体中会自动init
@@ -306,6 +344,7 @@ pub mod scy_transfer {
         Ok(())
     }
 
+    // 提款 SOL、USDT、USDC
     pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
         let state = &ctx.accounts.state;
         require_keys_eq!(state.admin, ctx.accounts.admin.key(), CustomError::Unauthorized); // 只有管理员可以提取资金
@@ -314,13 +353,15 @@ pub mod scy_transfer {
         let seeds = &[b"state".as_ref(), &[ctx.bumps.state]];
         let signer = &[&seeds[..]]; 
 
-        // 当pda_spl_balance > 0 时，提取 SOL
-        let pda_sol_balance = ctx.accounts.pda_sol_account.lamports();
-        if pda_sol_balance > 0 {
+        // 计算 PDA 账户的最低租金豁免余额
+        let rent_exempt_minimum = Rent::get()?.minimum_balance(0);
+        // 可提取的SOL = PDA 账户中的 SOL - 最低租金豁免金额
+        let withdrawable_sol = ctx.accounts.pda_sol_account.lamports() - rent_exempt_minimum;
+        if withdrawable_sol > 0 {
             let transfer_instruction = system_instruction::transfer(
-                &ctx.accounts.pda_sol_account.key(), // 从 PDA 账户
-                &ctx.accounts.admin.key(), // 转移到管理员账户
-                pda_sol_balance
+                &ctx.accounts.pda_sol_account.key(), // 从PDA账户
+                &ctx.accounts.admin.key(), // 转到Admin账户
+                withdrawable_sol
             );
 
             invoke_signed(
@@ -330,7 +371,7 @@ pub mod scy_transfer {
                     ctx.accounts.admin.to_account_info(),
                     ctx.accounts.system_program.to_account_info(),
                 ],
-                &[&[b"pda_sol", &[ctx.bumps.pda_sol_account]]]  // 签名 PDA 账户，使其授权转账
+                &[&[b"pda_sol", &[ctx.bumps.pda_sol_account]]] 
             )?;
         }
 
@@ -447,7 +488,7 @@ pub mod scy_transfer {
 
         let spl_price_in_usd = 0.02_f64;
         let decimals = 1_000_000u64; // USDT/USDC 的精度为 6
-        let maximum_age: u64 = 90; // 90s内更新的价格
+        let maximum_age: u64 = 60; // 60s内更新的价格
         const USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
         const USDT_MINT: &str = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
 

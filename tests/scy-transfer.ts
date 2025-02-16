@@ -157,7 +157,28 @@ describe("scy-transfer", () => {
 
   // });
 
-  // 测试 2：初始化 合约PDA SCY账户 initializePdaScyAta
+  // 测试 2：初始化 合约PDA SOL账户
+  // it("Initializes the system account for collecting sol", async () => {
+  //   const tx = await program.methods
+  //     .initializePdaSol()
+  //     .accounts({
+  //       admin: project_scy_authority.publicKey,
+  //     })
+  //     .signers([project_scy_authority])
+  //     .rpc();
+  
+  //   console.log("Initialize PDA SOL TX:", tx);
+  //   // TX: 2UriyKXihysYPtqbXZYeFftHMdwGYuZ385xBm4spxWqodZJeuTQis1K5cieaLYPctFw6cEMukSMixcpSC9UdD8y
+  //   // 结果：向AMP1iLLc3brSjnKeWdevEP6Dbg2C5BpW4e9FrSMdkeXJ 中转入 0.00089088左右的SOL
+  // });
+
+
+
+
+
+
+  
+  // 测试 3：初始化 合约PDA SCY账户 initializePdaScyAta
   // it("Initializes the token swap pda scy ata", async () => {
   //   // 打印 state 账户信息
   //   const _state = await program.account.state.all();
@@ -177,7 +198,7 @@ describe("scy-transfer", () => {
   //   // SCY的PDA账户地址：BUa4SLqoDAbUB7xaPnm9H1LWv5413HU4kcttnHRDC9AA
   // });
 
-  // 测试 3：初始化 合约PDA USDC账户 initializePdaUsdtAta
+  // 测试 4：初始化 合约PDA USDC账户 initializePdaUsdtAta
   //   it("Initializes the token swap pda usdc ata", async () => {
   //   // 打印 state 账户信息
   //   const _state = await program.account.state.all();
@@ -198,7 +219,7 @@ describe("scy-transfer", () => {
   //     // USDC的PDA账户地址：Cypuwcptx9FuYYcjmBDdTcJKMFrDbNFFajoNVAwhUztH
   //   });
 
-  // 测试 4：初始化 合约PDA USDT账户 initializePdaUsdAta
+  // 测试 5：初始化 合约PDA USDT账户 initializePdaUsdAta
   // it("Initializes the token swap pda usdt ata", async () => {
   //   const tx = await program.methods
   //     .initializePdaUsdtAta()
@@ -241,7 +262,7 @@ describe("scy-transfer", () => {
   //   console.log("USDT PDA Info:", pdaUsdtAtaInfo);
   // });
 
-  // 测试 5： Deposits SCY tokens 管理员存入 SCY 到 pda_scy_ata 这个PDA 账户
+  // 测试 6： Deposits SCY tokens 管理员存入 SCY 到 pda_scy_ata 这个PDA 账户
   // it("Deposits SCY tokens into the swap", async () => {
   //   // BN是大整数类型，处理迪比最小单位
   //   const depositAmount = new anchor.BN(67590_000_000_000);
@@ -262,7 +283,7 @@ describe("scy-transfer", () => {
 
 
 
-  // 测试 6.1：更新admin信息
+  // 测试 7.1：更新admin信息
   // it("Updates the admin address", async () => {
   //   // 最早的管理员账户project_scy_authority：DgrjDPxTMo1mgCSgvhQNn1XJthGeJEiFfP1AReAP3z74
   //   // 更新后的管理员账户 wallet : 5SUbxyeRinG1v8z9ELemtCr6mwpMHaP6gBqBcXCZEkWP
@@ -282,7 +303,7 @@ describe("scy-transfer", () => {
   // });
   
 
-  // 测试 6.2：将admin改为原来的管理员
+  // 测试 7.2：将admin改为原来的管理员
   // it("Reverts the admin address back to project_scy_authority", async () => {
   //   const newAdmin = project_scy_authority; // 目标是改回 project_scy_authority
 
@@ -312,7 +333,7 @@ describe("scy-transfer", () => {
   // });
 
 
-  // 测试 7：使用 SOL 购买 SCY 代币测试
+  // 测试 8：使用 SOL 购买 SCY 代币测试
   // it("Buys SCY tokens with valid SOL", async () => {
   //   const tx = await program.methods
   //     .buySplWithSol(new anchor.BN(lamportsToPay))
@@ -334,17 +355,35 @@ describe("scy-transfer", () => {
   //   const balance = userScyAccountInfo.value?.data["parsed"]["info"]["tokenAmount"]["uiAmount"];
   //   console.log("User SCY Token Balance:", balance);
 
-  //   // TODO: 这里自动创建了一个接收SOL的账户，但是不知是否属于：AMP1iLLc3brSjnKeWdevEP6Dbg2C5BpW4e9FrSMdkeXJ
+  //   // 这里自动创建了一个接收SOL的账户，但是不知是否属于：AMP1iLLc3brSjnKeWdevEP6Dbg2C5BpW4e9FrSMdkeXJ
   //   //TX: 3zSgeBMxw6iVGdd7ZtjuBHXxjZdkfteFNhyuduwCtxoCuTqLJx9QqzNRvpXyx9u4PzaDPrBUyYkG1AopMpw38cno
   // });
 
 
-  
+  // 测试 9：使用 USDC 购买SCY
+  // it("buy scy token with valid usdc/usdt amount", async () => {
+  //   try {
+  //     const tokenAmount = 5_000_000; // 5 USDC
+  //     const tx = await program.methods
+  //       .buySplWithSpl(new anchor.BN(tokenAmount))
+  //       .accounts({
+  //         user: wallet.publicKey,
+  //         userTokenAta: userUsdcATA,
+  //         mint: scyMint,
+  //         userMint: usdcMint,
+  //         priceUpdate: usdcUsdPriceFeedAccount
+  //       })
+  //       .signers([wallet])
+  //       .rpc();
+
+  //     console.log("Transaction signature:", tx);
+  //   } catch (error) {
+  //     console.log(error)
+  //   }
+  // })
 
 
-
-
-  // 测试 8 WIthdraw
+  // 测试 10： Withdraw
   it("Withdraws tokens tokens from the smart contract to admin account", async () => {
     const tx = await program.methods
     .withdraw()
@@ -356,76 +395,4 @@ describe("scy-transfer", () => {
 
   console.log("Withdraw TX:", tx);
   });
-
-  
-  
-
-
-  
-
-
-  // it("Buys scy tokens with valid SOL", async () => {
-  //   console.log(" 开始尝试交易... ");
-  //   console.log(`wallet.publicKey: ${ wallet.publicKey}`);
-  //   console.log(`project_scy_authority.publicKey: ${project_scy_authority.publicKey}`);
-  //   console.log(`projectScyAccount: ${projectScyAccount}`);
-  //   console.log(`project_scy_authority.publicKey: ${project_scy_authority.publicKey}`);
-  //   console.log(`scyMint: ${scyMint}`);
-  //   console.log(`solUsdPriceFeedAccount:${solUsdPriceFeedAccount}`);
-  //   const tx = await program.methods
-  //     .buySplWithSol(new anchor.BN(lamportsToPay))
-  //     // 以下所有都是公钥地址，并没有用到私钥
-  //     .accounts({
-  //       user: wallet.publicKey, // 购买 SCY的 用户钱包
-  //       projectSolAccount: project_scy_authority.publicKey,   // SCY项目方存放 SOL 的账户
-  //       projectScyAta: projectScyAccount,  // SCY项目方存放 SCY 的账户（已经是publicKey类型）
-  //       projectScyAuthority: project_scy_authority.publicKey,  // 项目方的scy钱包
-  //       mint: scyMint, // SCY 代币的 Mint 地址（已经是publicKey类型）
-  //       priceUpdate: solUsdPriceFeedAccount, // sol/usd价格账户（已经是publicKey类型）
-  //     })
-  //     .signers([])
-  //     .rpc();
-
-  //   console.log("Transaction signature:", tx);
-
-  //   // 取用户的 SCY 代币账户信息
-  //   const userScyAccountInfo = await connection.getParsedAccountInfo(
-  //     userScyAccount
-  //   );
-  //   const balance =
-  //     userScyAccountInfo.value?.data["parsed"]["info"]["tokenAmount"][
-  //       "uiAmount"
-  //     ];
-  //   console.log("User SCY Token Balance:", balance);
-  // });
-
-  // 用户使用usdc购买scy
-  // it("buy scy token with valid usdc", async () => {
-  //   try {
-  //     console.log("Start trading 1 usdc...");
-  //     const tokenAmount = 1_000_000;
-  //     const tx = await program.methods
-  //       .buyScyWithSpl(new anchor.BN(tokenAmount))
-  //       .accounts({
-  //         user: wallet.publicKey,
-  //         userTokenAta: userUsdcATA,
-  //         projectTokenAta: projectUsdcAta,
-  //         projectScyAta: projectScyAccount,
-  //         projectScyAuthority: project_scy_authority.publicKey,
-  //         mint: scyMint,
-  //         userMint: usdcMint,
-  //         priceUpdate: usdcUsdPriceFeedAccount,
-  //       })
-  //       .signers([wallet])
-  //       .rpc();
-
-  //     console.log("Transaction signature:", tx);
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // });
 });
-
-
-
-
