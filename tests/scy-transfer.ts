@@ -16,7 +16,6 @@ import { assert } from "chai";
 import * as fs from "fs";
 import { PythSolanaReceiver } from "@pythnetwork/pyth-solana-receiver";
 import { getAccount } from "@solana/spl-token";
-import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
 
 
 describe("scy-transfer", () => {
@@ -140,7 +139,7 @@ describe("scy-transfer", () => {
     }
   });
 
-  // // 测试 1：初始化 state 账户 Initialize State
+  // 测试 1：初始化 state 账户 Initialize State
   // it("Initializes the token swap state and accounts", async () => {
   //   const tx = await program.methods
   //     .initializeState(usdcMint, usdtMint, scyMint)
@@ -158,7 +157,7 @@ describe("scy-transfer", () => {
 
   // });
 
-  // // 测试 2：初始化 合约PDA SCY账户 initializePdaScyAta
+  // 测试 2：初始化 合约PDA SCY账户 initializePdaScyAta
   // it("Initializes the token swap pda scy ata", async () => {
   //   // 打印 state 账户信息
   //   const _state = await program.account.state.all();
@@ -178,7 +177,7 @@ describe("scy-transfer", () => {
   //   // SCY的PDA账户地址：BUa4SLqoDAbUB7xaPnm9H1LWv5413HU4kcttnHRDC9AA
   // });
 
-  // // 测试 3：初始化 合约PDA USDC账户 initializePdaUsdtAta
+  // 测试 3：初始化 合约PDA USDC账户 initializePdaUsdtAta
   //   it("Initializes the token swap pda usdc ata", async () => {
   //   // 打印 state 账户信息
   //   const _state = await program.account.state.all();
@@ -199,7 +198,7 @@ describe("scy-transfer", () => {
   //     // USDC的PDA账户地址：Cypuwcptx9FuYYcjmBDdTcJKMFrDbNFFajoNVAwhUztH
   //   });
 
-  // // 测试 4：初始化 合约PDA USDT账户 initializePdaUsdAta
+  // 测试 4：初始化 合约PDA USDT账户 initializePdaUsdAta
   // it("Initializes the token swap pda usdt ata", async () => {
   //   const tx = await program.methods
   //     .initializePdaUsdtAta()
@@ -217,28 +216,32 @@ describe("scy-transfer", () => {
   //   // USDT的PDA账户地址：7KPnWU5ssQN8enKDNNkB2Qbk4jNhc6by7WAowBSN7hX7
   // });
   
-  // // 查看PDA账户信息
-  // it("Fetch PDA SCY, USDC, and USDT accounts", async () => {
+  // 查看PDA账户信息
+  // it("Fetch PDA accounts", async () => {
   //   // 计算 PDA 地址
+  //   const [pdaSolAccount] = PublicKey.findProgramAddressSync([Buffer.from("pda_sol")], program.programId);
   //   const [pdaSplAta] = await PublicKey.findProgramAddressSync([Buffer.from("pda_spl_ata")], program.programId);
   //   const [pdaUsdcAta] = await PublicKey.findProgramAddressSync([Buffer.from("pda_usdc_ata")], program.programId);
   //   const [pdaUsdtAta] = await PublicKey.findProgramAddressSync([Buffer.from("pda_usdt_ata")], program.programId);
   
+  //   console.log("SOL PDA:", pdaSolAccount.toBase58());
   //   console.log("SCY PDA:", pdaSplAta.toBase58());
   //   console.log("USDC PDA:", pdaUsdcAta.toBase58());
   //   console.log("USDT PDA:", pdaUsdtAta.toBase58());
   
   //   // 查询 PDA 账户的状态
+  //   const pdaSolAtaInfo = await provider.connection.getAccountInfo(pdaSolAccount);
   //   const pdaSplAtaInfo = await getAccount(provider.connection, pdaSplAta);
   //   const pdaUsdcAtaInfo = await getAccount(provider.connection, pdaUsdcAta);
   //   const pdaUsdtAtaInfo = await getAccount(provider.connection, pdaUsdtAta);
   
+  //   console.log("SOL PDA Info:", pdaSolAtaInfo);
   //   console.log("SCY PDA Info:", pdaSplAtaInfo);
   //   console.log("USDC PDA Info:", pdaUsdcAtaInfo);
   //   console.log("USDT PDA Info:", pdaUsdtAtaInfo);
   // });
 
-  // // 测试 5： Deposits SCY tokens 管理员存入 SCY 到 pda_scy_ata 这个PDA 账户
+  // 测试 5： Deposits SCY tokens 管理员存入 SCY 到 pda_scy_ata 这个PDA 账户
   // it("Deposits SCY tokens into the swap", async () => {
   //   // BN是大整数类型，处理迪比最小单位
   //   const depositAmount = new anchor.BN(67590_000_000_000);
@@ -277,6 +280,7 @@ describe("scy-transfer", () => {
   //   const updatedState = await program.account.state.all();
   //   console.log("UpdatedState: ", updatedState)
   // });
+  
 
   // 测试 6.2：将admin改为原来的管理员
   // it("Reverts the admin address back to project_scy_authority", async () => {
@@ -307,28 +311,50 @@ describe("scy-transfer", () => {
   //   // TX: CtqdGKS5kvwD5jUmbAPEJw2WPmJvCyzaYdxJP1YKE6omzy5EGJbhqya7FRsNBXB6KV7nEPeEvxNimFG8epTFaGB
   // });
 
-    // 测试 7：使用 SOL 购买 SCY 代币测试
-  it("Buys SCY tokens with valid SOL", async () => {
+
+  // 测试 7：使用 SOL 购买 SCY 代币测试
+  // it("Buys SCY tokens with valid SOL", async () => {
+  //   const tx = await program.methods
+  //     .buySplWithSol(new anchor.BN(lamportsToPay))
+  //     .accounts({
+  //       user: wallet.publicKey,
+  //       mint: scyMint,
+  //       priceUpdate: solUsdPriceFeedAccount
+
+  //     })
+  //     .signers([wallet])
+  //     .rpc();
+
+  //   console.log("Transaction signature:", tx);
+
+  //   // Fetch the user's SCY token account balance
+  //   const userScyAccountInfo = await connection.getParsedAccountInfo(
+  //     userScyAccount
+  //   );
+  //   const balance = userScyAccountInfo.value?.data["parsed"]["info"]["tokenAmount"]["uiAmount"];
+  //   console.log("User SCY Token Balance:", balance);
+
+  //   // TODO: 这里自动创建了一个接收SOL的账户，但是不知是否属于：AMP1iLLc3brSjnKeWdevEP6Dbg2C5BpW4e9FrSMdkeXJ
+  //   //TX: 3zSgeBMxw6iVGdd7ZtjuBHXxjZdkfteFNhyuduwCtxoCuTqLJx9QqzNRvpXyx9u4PzaDPrBUyYkG1AopMpw38cno
+  // });
+
+
+  
+
+
+
+
+  // 测试 8 WIthdraw
+  it("Withdraws tokens tokens from the smart contract to admin account", async () => {
     const tx = await program.methods
-      .buySplWithSol(new anchor.BN(lamportsToPay))
-      .accounts({
-        user: wallet.publicKey,
-        mint: scyMint,
-        priceUpdate: solUsdPriceFeedAccount
-      })
-      .signers([wallet])
-      .rpc();
+    .withdraw()
+    .accounts({
+      admin: project_scy_authority.publicKey,
+    })
+    .signers([project_scy_authority]) // Sign with admin
+    .rpc();
 
-    console.log("Transaction signature:", tx);
-
-    // Fetch the user's SCY token account balance
-    const userScyAccountInfo = await connection.getParsedAccountInfo(
-      userScyAccount
-    );
-    const balance = userScyAccountInfo.value?.data["parsed"]["info"]["tokenAmount"]["uiAmount"];
-    console.log("User SCY Token Balance:", balance);
-
-    //TX: 3zSgeBMxw6iVGdd7ZtjuBHXxjZdkfteFNhyuduwCtxoCuTqLJx9QqzNRvpXyx9u4PzaDPrBUyYkG1AopMpw38cno
+  console.log("Withdraw TX:", tx);
   });
 
   

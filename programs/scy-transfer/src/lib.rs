@@ -112,7 +112,12 @@ pub struct State {
 
 #[derive(Accounts)] // 定义 InitializeStat 所需的账户 (合约部术后第一次调用，用于创建state账户并指定 admin 和 mint address)
 pub struct InitializeState<'info> {
-    #[account(init, payer = admin, space = 8 + 32 + 32 + 32 + 32, seeds = [b"state"], bump)]
+    #[account(
+        init, 
+        payer = admin, 
+        space = 8 + 32 + 32 + 32 + 32, 
+        seeds = [b"state"], 
+        bump)]
     pub state: Account<'info, State>,
     #[account(mut)]
     pub admin: Signer<'info>, //admin账户是mut，意味着可以在交易中修改其 SOL 余额
@@ -120,19 +125,6 @@ pub struct InitializeState<'info> {
 }
 
 // ?是否需要InitializePdaSol
-#[derive(Accounts)]
-pub struct InitializePdaSol<'info> {
-    #[account(
-        init,
-        payer = admin,
-        seeds = [b"pda_sol"],
-        bump
-    )]
-    pub pda_sol_account: SystemAccount<'info>, // 这个 PDA 账户存储 SOL
-    #[account(mut)]
-    pub admin: Signer<'info>, // 管理员账户，必须签名
-    pub system_program: Program<'info, System>,
-}
 
 
 #[derive(Accounts)] // 定义 InitializePdaSplAta 所需的账户，用于初始化 pda_spl_ata 账户，也即合约的 SCY 代币账户（PDA），用于存储和分发 SCY 代币
@@ -273,11 +265,7 @@ pub mod scy_transfer {
     }
 
     // ?是否需要Initialize_pda_sol
-    // 初始化 pda_sol_account（用于存储 SOL 的 PDA 账户）
-    pub fn initialize_pda_sol(ctx: Context<InitializePdaSol>) -> Result<()> {
-        msg!("PDA SOL Account initialized: {}", ctx.accounts.pda_sol_account.key());
-        Ok(())
-    }
+
 
     // 初始化 pda_spl_ata （用于储存、管理 SCY 的PDA账户） 结构体中会自动init
     pub fn initialize_pda_spl_ata(ctx: Context<InitializePdaSplAta>) -> Result<()> {
