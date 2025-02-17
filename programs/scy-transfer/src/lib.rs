@@ -446,9 +446,6 @@ pub mod scy_transfer {
         let user_signer = &ctx.accounts.user; // 用户的发送sol普通钱包
         let system_program = &ctx.accounts.system_program; // PDA SOL账户
 
-   
-        let system_program = &ctx.accounts.system_program;
-
         let transfer_instruction = system_instruction::transfer(
             user_signer.key,
             &ctx.accounts.pda_sol_account.key,//修改为 传入 PDA账户 
