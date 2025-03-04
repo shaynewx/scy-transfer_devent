@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-scy_transfer = "ga5pZPeoVwMyQobNq8EmNzq8AJwXmmeLvPC1iRZverP"
+scy_transfer = "385YS1FGAQd8qGhiMsTnvJExTk7A6mgr8rNCRejQCPHi"
 
 [registry]
 url = "https://api.apr.dev"
